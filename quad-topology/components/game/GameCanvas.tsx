@@ -341,7 +341,7 @@ export default function GameCanvas({ nodes, boundaryEdges, userEdges, tiles, inv
                         cx={mousePos.x}
                         cy={mousePos.y}
                         r={6}
-                        className="fill-blue-500/50 pointer-events-none"
+                        className="fill-blue-500/50 pointer-events-none "
                     />
                 )}
 
