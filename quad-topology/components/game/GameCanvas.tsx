@@ -15,9 +15,14 @@ interface GameCanvasProps {
     onEdgeDelete?: (edgeId: string) => void; // NEW: Delete edge callback
     // New unified handler for advanced creation
     onStrokeCreate?: (start: { pos: Vector2, nodeId?: string }, end: { pos: Vector2, nodeId?: string }) => void;
+    // New Tutorial Props
+    tutorialActive?: boolean;
+    activeNodeId?: string | null; // Node to blink
+    tutorialPath?: { start: Vector2, end: Vector2 } | null; // Guide line
+    tutorialPoint?: Vector2 | null; // Blinking point (no node)
 }
 
-export default function GameCanvas({ nodes, boundaryEdges, userEdges, tiles, invalidFaces, onEdgesChange, onEdgeDelete, onStrokeCreate }: GameCanvasProps) {
+export default function GameCanvas({ nodes, boundaryEdges, userEdges, tiles, invalidFaces, onEdgesChange, onEdgeDelete, onStrokeCreate, tutorialActive, activeNodeId, tutorialPath, tutorialPoint }: GameCanvasProps) {
     const [dragStart, setDragStart] = useState<{ pos: Vector2, nodeId?: string } | null>(null);
     const [mousePos, setMousePos] = useState<Vector2 | null>(null);
 
@@ -244,6 +249,51 @@ export default function GameCanvas({ nodes, boundaryEdges, userEdges, tiles, inv
                 onTouchEnd={handleMouseUp}
                 onMouseLeave={(e) => handleMouseUp(e)}
             >
+                {/* SVG Definitions for Arrow Markers and Glow Effects */}
+                <defs>
+                    {/* Arrow Marker for Tutorial Path */}
+                    <marker
+                        id="tutorial-arrow"
+                        markerWidth="12"
+                        markerHeight="12"
+                        refX="10"
+                        refY="6"
+                        orient="auto"
+                        markerUnits="userSpaceOnUse"
+                    >
+                        <path d="M0,0 L0,12 L12,6 Z" fill="#facc15" />
+                    </marker>
+
+                    {/* Glow Filter for Tutorial Elements */}
+                    <filter id="tutorial-glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+
+                    {/* Animated Dash Pattern */}
+                    <style>{`
+                        @keyframes dash-flow {
+                            0% { stroke-dashoffset: 20; }
+                            100% { stroke-dashoffset: 0; }
+                        }
+                        .tutorial-path-animated {
+                            animation: dash-flow 0.8s linear infinite;
+                        }
+                        @keyframes ring-pulse {
+                            0% { transform: scale(1); opacity: 0.8; }
+                            50% { transform: scale(1.3); opacity: 0.4; }
+                            100% { transform: scale(1); opacity: 0.8; }
+                        }
+                        .ring-pulse {
+                            animation: ring-pulse 1s ease-in-out infinite;
+                            transform-origin: center;
+                        }
+                    `}</style>
+                </defs>
+
                 {/* Background Tiles (Yellow/Red/Green areas) */}
                 {tiles?.map((tile) => (
                     <polygon
@@ -251,8 +301,9 @@ export default function GameCanvas({ nodes, boundaryEdges, userEdges, tiles, inv
                         points={tile.points.map(p => `${p.x},${p.y}`).join(' ')}
                         className={cn(
                             "stroke-none",
-                            tile.type === 'input' && "fill-red-500/20",   // Reduced opacity for better visibility of grid
-                            tile.type === 'output' && "fill-green-500/20",
+                            // SWAPPED: Input is now Green (Start), Output is now Red (End) for User Preference
+                            tile.type === 'input' && "fill-green-500/20",
+                            tile.type === 'output' && "fill-red-500/20",
                             tile.type === 'default' && "fill-amber-400/10"
                         )}
                         style={{ pointerEvents: 'none' }}
@@ -280,6 +331,104 @@ export default function GameCanvas({ nodes, boundaryEdges, userEdges, tiles, inv
                     />
                 ))}
 
+                {/* Tutorial Guide Line with Arrow and Glow */}
+                {tutorialActive && tutorialPath && (
+                    <>
+                        {/* Glow layer (behind) */}
+                        <line
+                            x1={tutorialPath.start.x}
+                            y1={tutorialPath.start.y}
+                            x2={tutorialPath.end.x}
+                            y2={tutorialPath.end.y}
+                            stroke="#facc15"
+                            strokeWidth={8}
+                            strokeLinecap="round"
+                            opacity={0.3}
+                            filter="url(#tutorial-glow)"
+                            style={{ pointerEvents: 'none' }}
+                        />
+                        {/* Main dashed line with arrow */}
+                        <line
+                            x1={tutorialPath.start.x}
+                            y1={tutorialPath.start.y}
+                            x2={tutorialPath.end.x}
+                            y2={tutorialPath.end.y}
+                            stroke="#facc15"
+                            strokeWidth={4}
+                            strokeDasharray="10,5"
+                            strokeLinecap="round"
+                            markerEnd="url(#tutorial-arrow)"
+                            className="tutorial-path-animated"
+                            style={{ pointerEvents: 'none' }}
+                        />
+                        {/* Start Point - Green pulsing ring */}
+                        <circle
+                            cx={tutorialPath.start.x}
+                            cy={tutorialPath.start.y}
+                            r={18}
+                            fill="none"
+                            stroke="#22c55e"
+                            strokeWidth={3}
+                            className="ring-pulse"
+                            style={{ pointerEvents: 'none' }}
+                        />
+                        <circle
+                            cx={tutorialPath.start.x}
+                            cy={tutorialPath.start.y}
+                            r={10}
+                            fill="#22c55e"
+                            opacity={0.5}
+                            className="animate-pulse"
+                            style={{ pointerEvents: 'none' }}
+                        />
+                        {/* End Point - Yellow pulsing ring */}
+                        <circle
+                            cx={tutorialPath.end.x}
+                            cy={tutorialPath.end.y}
+                            r={18}
+                            fill="none"
+                            stroke="#facc15"
+                            strokeWidth={3}
+                            className="ring-pulse"
+                            style={{ pointerEvents: 'none' }}
+                        />
+                        <circle
+                            cx={tutorialPath.end.x}
+                            cy={tutorialPath.end.y}
+                            r={10}
+                            fill="#facc15"
+                            opacity={0.5}
+                            className="animate-pulse"
+                            style={{ pointerEvents: 'none' }}
+                        />
+                    </>
+                )}
+
+                {/* Tutorial Point Blinker (for single point guidance) */}
+                {tutorialActive && tutorialPoint && (
+                    <>
+                        <circle
+                            cx={tutorialPoint.x}
+                            cy={tutorialPoint.y}
+                            r={20}
+                            fill="none"
+                            stroke="#facc15"
+                            strokeWidth={3}
+                            className="ring-pulse"
+                            style={{ pointerEvents: 'none' }}
+                        />
+                        <circle
+                            cx={tutorialPoint.x}
+                            cy={tutorialPoint.y}
+                            r={12}
+                            fill="#facc15"
+                            opacity={0.6}
+                            className="animate-ping"
+                            style={{ pointerEvents: 'none' }}
+                        />
+                    </>
+                )}
+
                 {/* Boundary Edges */}
                 {boundaryEdges.map((edge) => {
                     const start = getNodePos(edge.source);
@@ -291,7 +440,7 @@ export default function GameCanvas({ nodes, boundaryEdges, userEdges, tiles, inv
                             y1={start.y}
                             x2={end.x}
                             y2={end.y}
-                            className="stroke-white/30 stroke-2"
+                            className="stroke-white stroke-2"
                             style={{ pointerEvents: 'none' }}
                         />
                     );
@@ -358,11 +507,17 @@ export default function GameCanvas({ nodes, boundaryEdges, userEdges, tiles, inv
                             fill="transparent"
                         />
                         <circle
+                            r={25}
+                            fill={tutorialActive && activeNodeId === node.id ? "rgba(255, 255, 0, 0.2)" : "transparent"}
+                            className={tutorialActive && activeNodeId === node.id ? "animate-ping" : ""}
+                        />
+                        <circle
                             r={5}
                             className={cn(
                                 "stroke-[1px] fill-white stroke-white pointer-events-none",
                                 "transition-all duration-200",
-                                (dragStart?.nodeId === node.id) ? "fill-blue-400 scale-125" : ""
+                                (dragStart?.nodeId === node.id) ? "fill-blue-400 scale-125" : "",
+                                (tutorialActive && activeNodeId === node.id) ? "fill-yellow-400 stroke-yellow-400 scale-150 shadow-[0_0_10px_yellow]" : ""
                             )}
                         />
                     </g>

@@ -27,6 +27,18 @@ function createTile(id: string, points: { x: number, y: number }[], type: 'input
 // The user starts with a blank canvas + background guides (tiles).
 
 /* -------------------------------------------------------------------------- */
+/*                                TUTORIAL: 1 to 2                            */
+/* -------------------------------------------------------------------------- */
+const l0_tiles: GameTile[] = [
+    // Input: 2 units wide (Top) - Single Block
+    createTile('in', [{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: 2, y: 1 }, { x: 0, y: 1 }], 'input'),
+    // Area: 2 units wide (Middle)
+    createTile('area', [{ x: 0, y: 1 }, { x: 2, y: 1 }, { x: 2, y: 3 }, { x: 0, y: 3 }], 'default'),
+    // Output: 2 units wide (Bottom)
+    createTile('out', [{ x: 0, y: 3 }, { x: 2, y: 3 }, { x: 2, y: 4 }, { x: 0, y: 4 }], 'output')
+];
+
+/* -------------------------------------------------------------------------- */
 /*                                LEVEL 1: 1 to 1                             */
 /* -------------------------------------------------------------------------- */
 const l1_tiles: GameTile[] = [
@@ -95,6 +107,44 @@ const l6_tiles: GameTile[] = [
 
 // Re-export levels with EMPTY nodes/edges
 export const levels: LevelData[] = [
+    {
+        id: 'tutorial-1-to-2',
+        name: 'Tutorial: 1 to 2',
+        description: 'Learn the basics: 1 Start to 2 Ends.',
+        nodes: [
+            // Top Row (y=160) - Input "1"
+            { id: 'n_0_1', position: { x: 100, y: 160 }, type: 'default' },
+            { id: 'n_2_1', position: { x: 220, y: 160 }, type: 'default' },
+            // Row 3 (y=280) - Output "2" top edge with center split
+            { id: 'n_0_3', position: { x: 100, y: 280 }, type: 'default' },
+            { id: 'n_1_3', position: { x: 160, y: 280 }, type: 'default' }, // Center of row 3
+            { id: 'n_2_3', position: { x: 220, y: 280 }, type: 'default' },
+            // Bottom Row (y=340) - Output "2" bottom edge with center
+            { id: 'n_0_4', position: { x: 100, y: 340 }, type: 'default' },
+            { id: 'n_1_4', position: { x: 160, y: 340 }, type: 'default' },
+            { id: 'n_2_4', position: { x: 220, y: 340 }, type: 'default' }
+        ],
+        edges: [
+            // Input Frame - Top (just frame for "1")
+            { id: 'e_t', source: 'n_0_1', target: 'n_2_1' },
+
+            // Output Frame - Left wall (from row 3 to row 4)
+            { id: 'e_l03', source: 'n_0_3', target: 'n_0_4' },
+            // Output Frame - Right wall
+            { id: 'e_r03', source: 'n_2_3', target: 'n_2_4' },
+            // Output Frame - Top (row 3) WITH center split for "2"
+            { id: 'e_h3l', source: 'n_0_3', target: 'n_1_3' },
+            { id: 'e_h3r', source: 'n_1_3', target: 'n_2_3' },
+            // Output Frame - Bottom (row 4)
+            { id: 'e_b1', source: 'n_0_4', target: 'n_1_4' },
+            { id: 'e_b2', source: 'n_1_4', target: 'n_2_4' },
+            // Output Vertical Split (showing "2")
+            { id: 'e_v34', source: 'n_1_3', target: 'n_1_4' }
+        ],
+        tiles: l0_tiles,
+        gridSize: { width: 400, height: 600 },
+        targetFaces: 0
+    },
     {
         id: '1-to-1',
         name: '1 to 1',

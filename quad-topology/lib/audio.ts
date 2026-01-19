@@ -9,9 +9,9 @@ class AudioManager {
 
     constructor() {
         if (typeof window !== 'undefined') {
-            this.bgmAudio = new Audio('/music/gameMusic.mp3');
-            this.bgmAudio.loop = true;
-            this.bgmAudio.volume = this.bgmVolume;
+            // this.bgmAudio = new Audio('/music/gameMusic.mp3');
+            // this.bgmAudio.loop = true;
+            // this.bgmAudio.volume = this.bgmVolume;
         }
     }
 
